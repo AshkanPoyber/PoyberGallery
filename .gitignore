@@ -5,6 +5,7 @@ config.local.php
 # Uploads (Users)
 uploads/*
 !uploads/.gitkeep
+!uploads/.htaccess
 
 # OS
 .DS_Store

@@ -1,0 +1,12 @@
+# Deny directory listing
+Options -Indexes
+
+# Deny PHP execution (extra safety)
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|phar|pl|py|jsp|asp|sh|cgi)$">
+  Require all denied
+</FilesMatch>
+
+# Only allow image files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+  Require all granted
+</FilesMatch>
