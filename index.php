@@ -6,19 +6,100 @@ require_once __DIR__ . '/includes/functions.php';
 
 session_start();
 
+// Pagination
+$perPage = 12;
+$page    = max(1, (int)($_GET['page'] ?? 1));
+$offset  = ($page - 1) * $perPage;
+
+// Total count
+$total      = (int)$pdo->query("SELECT COUNT(*) FROM images")->fetchColumn();
+$totalPages = max(1, (int)ceil($total / $perPage));
+
+// Fetch images with user info + like count
+$stmt = $pdo->prepare(
+    "SELECT i.id, i.title, i.file_path, i.created_at, i.views,
+            u.username,
+            (SELECT COUNT(*) FROM likes WHERE image_id = i.id) AS likes
+     FROM images i
+     JOIN users u ON u.id = i.user_id
+     ORDER BY i.created_at DESC
+     LIMIT :limit OFFSET :offset"
+);
+$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+$images = $stmt->fetchAll();
+
 $pageTitle = 'Home';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<div class="text-center py-20">
-    <h2 class="text-3xl font-semibold mb-3">Welcome to PoyberGallery 🖼️</h2>
-    <p class="text-slate-400">
-        <?php if (isLoggedIn()): ?>
-            Hey <strong class="text-accent-soft"><?= e($_SESSION['username']) ?></strong>! The gallery will be built here.
-        <?php else: ?>
-            <a href="register.php" class="text-accent-soft hover:text-white">Sign up</a> to start sharing your art.
-        <?php endif; ?>
-    </p>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h2 class="text-2xl font-semibold">Latest uploads</h2>
+        <p class="text-sm text-slate-400 mt-1">
+            <?= number_format($total) ?> image<?= $total === 1 ? '' : 's' ?> shared
+        </p>
+    </div>
+    <?php if (isLoggedIn()): ?>
+        <a href="upload.php"
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-br from-accent to-fuchsia-500 text-white font-medium hover:shadow-lg transition text-sm">
+            + Upload
+        </a>
+    <?php endif; ?>
 </div>
+
+<?php if (empty($images)): ?>
+    <div class="text-center py-20 rounded-2xl border border-dashed border-white/10">
+        <svg viewBox="0 0 24 24" class="w-12 h-12 mx-auto text-slate-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M21 15l-5-5L5 21" />
+        </svg>
+        <p class="text-slate-400">No images yet. Be the first to share!</p>
+        <?php if (!isLoggedIn()): ?>
+            <a href="register.php" class="inline-block mt-3 text-accent-soft hover:text-white transition">
+                Sign up to upload →
+            </a>
+        <?php endif; ?>
+    </div>
+<?php else: ?>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <?php foreach ($images as $img): ?>
+            <a href="image.php?id=<?= (int)$img['id'] ?>"
+                class="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-ink-800/50 hover:border-accent/40 transition">
+                <img src="uploads/<?= e($img['file_path']) ?>"
+                    alt="<?= e($img['title']) ?>"
+                    loading="lazy"
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-x-0 bottom-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                    <p class="text-sm font-medium text-white truncate"><?= e($img['title']) ?></p>
+                    <div class="flex items-center gap-3 text-[11px] text-slate-300 mt-1">
+                        <span>@<?= e($img['username']) ?></span>
+                        <span class="flex items-center gap-1">
+                            <svg viewBox="0 0 24 24" class="w-3 h-3" fill="currentColor">
+                                <path d="M12 21s-7-4.5-9.5-9C.5 8 2 4 6 4c2 0 3.5 1 4.5 2.5C11.5 5 13 4 15 4c4 0 5.5 4 3.5 8C19 16.5 12 21 12 21z" />
+                            </svg>
+                            <?= (int)$img['likes'] ?>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <?php if ($totalPages > 1): ?>
+        <div class="flex justify-center items-center gap-2 mt-8">
+            <?php if ($page > 1): ?>
+                <a href="?page=<?= $page - 1 ?>" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm transition">← Prev</a>
+            <?php endif; ?>
+            <span class="text-sm text-slate-400 px-3">Page <?= $page ?> of <?= $totalPages ?></span>
+            <?php if ($page < $totalPages): ?>
+                <a href="?page=<?= $page + 1 ?>" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm transition">Next →</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
