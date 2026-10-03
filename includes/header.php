@@ -154,9 +154,12 @@ $isDark    = $theme === 'dark';
 
             <?php if (isLoggedIn()): ?>
                 <a href="upload.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">Upload</a>
-                <a href="profile.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
-                    @<?= e($_SESSION['username'] ?? '') ?>
-                </a>
+                <a href="profile.php?u=<?= e($_SESSION['username'] ?? '') ?>" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
+  @<?= e($_SESSION['username'] ?? '') ?>
+</a>
+<a href="settings.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
+  Settings
+</a>
                 <a href="logout.php" class="px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-200 transition">Logout</a>
             <?php else: ?>
                 <a href="login.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">Login</a>
