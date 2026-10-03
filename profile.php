@@ -10,7 +10,9 @@ $username = trim((string)($_GET['u'] ?? ''));
 if ($username === '') redirect('index.php');
 
 // Fetch user
-$stmt = $pdo->prepare("SELECT id, username, email, bio, created_at FROM users WHERE username = ? LIMIT 1");
+$stmt = $pdo->prepare(
+    "SELECT id, username, email, bio, created_at FROM users WHERE username = ? LIMIT 1"
+);
 $stmt->execute([$username]);
 $user = $stmt->fetch();
 
@@ -20,23 +22,30 @@ if (!$user) {
 }
 
 $userId = (int)$user['id'];
+$isOwnProfile = isLoggedIn() && currentUserId() === $userId;
 
 // Stats
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM images WHERE user_id = ?");
 $stmt->execute([$userId]);
 $imageCount = (int)$stmt->fetchColumn();
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE user_id = ?");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM follows WHERE following_id = ?");
 $stmt->execute([$userId]);
-$likesGiven = (int)$stmt->fetchColumn();
+$followersCount = (int)$stmt->fetchColumn();
 
-$stmt = $pdo->prepare(
-    "SELECT COUNT(*) FROM likes l
-     JOIN images i ON i.id = l.image_id
-     WHERE i.user_id = ?"
-);
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM follows WHERE follower_id = ?");
 $stmt->execute([$userId]);
-$likesReceived = (int)$stmt->fetchColumn();
+$followingCount = (int)$stmt->fetchColumn();
+
+// Am I following this user?
+$isFollowing = false;
+if (isLoggedIn() && !$isOwnProfile) {
+    $stmt = $pdo->prepare(
+        "SELECT id FROM follows WHERE follower_id = ? AND following_id = ? LIMIT 1"
+    );
+    $stmt->execute([currentUserId(), $userId]);
+    $isFollowing = (bool)$stmt->fetch();
+}
 
 // User's images
 $stmt = $pdo->prepare(
@@ -49,9 +58,7 @@ $stmt = $pdo->prepare(
 $stmt->execute([$userId]);
 $images = $stmt->fetchAll();
 
-$isOwnProfile = isLoggedIn() && currentUserId() === $userId;
 $pageTitle = '@' . $user['username'];
-
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -70,21 +77,34 @@ require __DIR__ . '/includes/header.php';
 
             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-slate-400 mt-4">
                 <span><strong class="text-slate-900 dark:text-slate-100"><?= number_format($imageCount) ?></strong> images</span>
-                <span><strong class="text-slate-900 dark:text-slate-100"><?= number_format($likesReceived) ?></strong> likes received</span>
-                <span><strong class="text-slate-900 dark:text-slate-100"><?= number_format($likesGiven) ?></strong> likes given</span>
-                <span class="text-xs text-slate-500">Joined <?= date('M Y', strtotime($user['created_at'])) ?></span>
+                <span><strong id="followersCount" class="text-slate-900 dark:text-slate-100"><?= number_format($followersCount) ?></strong> followers</span>
+                <span><strong class="text-slate-900 dark:text-slate-100"><?= number_format($followingCount) ?></strong> following</span>
             </div>
 
-            <?php if ($isOwnProfile): ?>
-                <div class="mt-5 flex flex-wrap gap-2">
+            <div class="mt-5 flex flex-wrap gap-2">
+                <?php if ($isOwnProfile): ?>
                     <a href="upload.php" class="px-4 py-2 rounded-xl text-sm bg-gradient-to-br from-accent to-fuchsia-500 text-white font-medium hover:shadow-glow transition">
                         + Upload
                     </a>
                     <a href="settings.php" class="px-4 py-2 rounded-xl text-sm text-slate-700 dark:text-slate-300 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition">
                         Edit profile
                     </a>
-                </div>
-            <?php endif; ?>
+                <?php elseif (isLoggedIn()): ?>
+                    <button id="followBtn"
+                        data-user-id="<?= $userId ?>"
+                        data-following="<?= $isFollowing ? '1' : '0' ?>"
+                        class="px-5 py-2 rounded-xl text-sm font-medium transition
+                    <?= $isFollowing
+                        ? 'text-slate-700 dark:text-slate-300 bg-black/5 dark:bg-white/5 hover:bg-rose-500/15 hover:text-rose-500'
+                        : 'text-white bg-gradient-to-br from-accent to-fuchsia-500 hover:shadow-glow' ?>">
+                        <?= $isFollowing ? 'Following' : 'Follow' ?>
+                    </button>
+                <?php else: ?>
+                    <a href="login.php" class="px-5 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-accent to-fuchsia-500 hover:shadow-glow transition">
+                        Log in to follow
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -96,7 +116,9 @@ require __DIR__ . '/includes/header.php';
 <?php if (empty($images)): ?>
     <div class="text-center py-16 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
         <p class="text-slate-500 dark:text-slate-400">
-            <?= $isOwnProfile ? "You haven't uploaded anything yet." : "@" . e($user['username']) . " hasn't uploaded anything yet." ?>
+            <?= $isOwnProfile
+                ? "You haven't uploaded anything yet."
+                : "@" . e($user['username']) . " hasn't uploaded anything yet." ?>
         </p>
     </div>
 <?php else: ?>

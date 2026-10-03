@@ -137,6 +137,15 @@ $isDark    = $theme === 'dark';
         </a>
 
         <nav class="flex items-center gap-2 text-sm">
+            <!-- Search -->
+            <a href="search.php"
+                title="Search"
+                class="w-9 h-9 rounded-xl grid place-items-center text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 transition">
+                <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.3-4.3" />
+                </svg>
+            </a>
             <!-- Theme toggle -->
             <button
                 id="themeToggle"
@@ -155,11 +164,11 @@ $isDark    = $theme === 'dark';
             <?php if (isLoggedIn()): ?>
                 <a href="upload.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">Upload</a>
                 <a href="profile.php?u=<?= e($_SESSION['username'] ?? '') ?>" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
-  @<?= e($_SESSION['username'] ?? '') ?>
-</a>
-<a href="settings.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
-  Settings
-</a>
+                    @<?= e($_SESSION['username'] ?? '') ?>
+                </a>
+                <a href="settings.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">
+                    Settings
+                </a>
                 <a href="logout.php" class="px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-200 transition">Logout</a>
             <?php else: ?>
                 <a href="login.php" class="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition">Login</a>

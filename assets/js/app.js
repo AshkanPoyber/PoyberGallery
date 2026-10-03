@@ -200,4 +200,74 @@
     div.textContent = s;
     return div.innerHTML;
   }
+
+  // ============ FOLLOW ============
+  const followBtn = document.getElementById("followBtn");
+  if (followBtn) {
+    followBtn.addEventListener("click", async () => {
+      const userId = +followBtn.dataset.userId;
+      const wasFollowing = followBtn.dataset.following === "1";
+
+      // Optimistic UI
+      followBtn.disabled = true;
+      applyFollowStyle(!wasFollowing);
+
+      try {
+        const res = await fetch("api/follow.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            user_id: userId,
+            csrf_token: csrfToken,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+
+        if (data.success) {
+          followBtn.dataset.following = data.following ? "1" : "0";
+          const fc = document.getElementById("followersCount");
+          if (fc) fc.textContent = data.followers.toLocaleString();
+        }
+      } catch (err) {
+        // Revert
+        applyFollowStyle(wasFollowing);
+      } finally {
+        followBtn.disabled = false;
+      }
+    });
+
+    function applyFollowStyle(following) {
+      followBtn.dataset.following = following ? "1" : "0";
+      followBtn.textContent = following ? "Following" : "Follow";
+
+      // Reset all state classes
+      followBtn.className =
+        "px-5 py-2 rounded-xl text-sm font-medium transition";
+
+      if (following) {
+        followBtn.classList.add(
+          "text-slate-700",
+          "dark:text-slate-300",
+          "bg-black/5",
+          "dark:bg-white/5",
+          "hover:bg-rose-500/15",
+          "hover:text-rose-500",
+        );
+      } else {
+        followBtn.classList.add(
+          "text-white",
+          "bg-gradient-to-br",
+          "from-accent",
+          "to-fuchsia-500",
+          "hover:shadow-glow",
+        );
+      }
+    }
+  }
 })();
